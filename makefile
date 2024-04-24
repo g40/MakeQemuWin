@@ -29,8 +29,14 @@ all:
 	-@echo "make setup: configure QEMU build. arm and aarch64 in this case"
 	-@echo "make build: runs make on QEMU source tree ($(SDIR))"
 	-@echo "make update: copies binaries to target folder ($(QDIR))"
+	-@echo "make msys: ensure pacman updates and installs build requirements"
 	-@echo "make nuke: delete all build artefacts, including directory and configuration $(BDIR)cd ../qemu9"
 	-@echo "make install: copies built binaries and runtime DLLs etc. to target folder ($(QDIR))"
+
+# make sure msys environment is up to date
+msys:
+	pacman -Suy --noconfirm
+	pacman -Sy --noconfirm base-devel mingw-w64-x86_64-gcc git python mingw-w64-x86_64-glib2 
 
 # clone and checkout 
 clone:
@@ -40,7 +46,7 @@ clone:
 # setup+configure
 setup:
 	mkdir -p $(BDIR)
-	cd $(BDIR) && $(SDIR)/configure --target-list=$(T_ARM) --disable-capstone
+	cd $(BDIR) && $(SDIR)/configure --target-list=$(T_ARM) --disable-capstone --disable-gtk --disable-sdl
 
 # actually build binaries. adjust jobs to suit
 build:
@@ -61,6 +67,11 @@ install:
 	mkdir -p $(QDIR)
 	cp $(BDIR)/*.exe $(QDIR)
 	cp /mingw64/bin/{libatk-1.0-0.dll,libbz2-1.dll,libcairo-2.dll,libcairo-gobject-2.dll,libdatrie-1.dll,libepoxy-0.dll,libexpat-1.dll,libffi-6.dll,libfontconfig-1.dll,libfreetype-6.dll,libfribidi-0.dll,libgcc_s_seh-1.dll,libgdk_pixbuf-2.0-0.dll,libgdk-3-0.dll,libgio-2.0-0.dll,libglib-2.0-0.dll,libgmodule-2.0-0.dll,libgobject-2.0-0.dll,libgraphite2.dll,libgtk-3-0.dll,libharfbuzz-0.dll,libiconv-2.dll,libintl-8.dll,libjpeg-8.dll,liblzo2-2.dll,libpango-1.0-0.dll,libpangocairo-1.0-0.dll,libpangoft2-1.0-0.dll,libpangowin32-1.0-0.dll,libpcre-1.dll,libpixman-1-0.dll,libpng16-16.dll,libssp-0.dll,libstdc++-6.dll,libthai-0.dll,libwinpthread-1.dll,SDL2.dll,zlib1.dll} $(QDIR)
+
+# check dependencies as these need to be exported to the Windows environment 
+# if msys2 /bin and friends is not in the Windows path
+ deps:
+	strace ../build/qemu-system-arm -machine mps2-an500
 
 # caution will delete all build artefacts
 nuke:
