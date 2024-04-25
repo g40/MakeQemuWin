@@ -52,7 +52,8 @@ all:
 # make sure msys environment is up to date
 msys:
 	pacman -Suy --noconfirm
-	pacman -Sy --noconfirm base-devel mingw-w64-x86_64-gcc git python mingw-w64-x86_64-glib2 
+	pacman -Sy --noconfirm base-devel ninja glib2-devel mingw-w64-x86_64-gcc git python mingw-w64-x86_64-glib2 
+	pacman -Sy --noconfirm mingw-w64-x86_64-glib2 mingw-w64-x86_64-gtk3 mingw-w64-x86_64-SDL2
 
 # clone and checkout 
 clone:
