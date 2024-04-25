@@ -1,12 +1,14 @@
 #
 # makefile for building QEMU on Windows using msys2 MINGW64
 #
-# directory structure assumes 3 peers so Git is siloed:
+# directory structure assumes 3 peers (inside msys) so Git is siloed:
 # ..
 # MakeQemuWin
 # qemu
 # build
 #
+# and an external Windows direectory for the binaries and dependencies
+# 
 
 # QEMU repository
 QREPO=https://github.com/qemu/qemu.git
@@ -16,22 +18,36 @@ QVER=v9.0.0-rc4
 QDIR=/r/apps/qemu9
 
 # target machines. I'm only interested in ARM stuff for this build
-T_ARM=arm-softmmu,aarch64-softmmu
+TARGETS=arm aarch64
+
 
 # out of tree build dir.
 BDIR=../build
 # source folder.
 SDIR=../qemu
+# assemble target machines
+SPACE=$(subst ,, )
+# contains spaces ...
+S_LIST:=$(foreach EL,$(TARGETS),$(EL)-softmmu,)
+# so remove them.
+TARGET_LIST:=$(subst $(SPACE),,$(S_LIST))
+# create a list of .exe files
+EXE_LIST:=$(foreach EL,$(TARGETS), $(BDIR)/qemu-system-$(EL).exe)
+
+.PHONY: deps nuked nukes build clone update loop
 
 #
 all:
+	-@echo "make world: runs setup build install version"
+	-@echo "make do: runs build install version"
+	-@echo "make msys: ensure pacman updates and installs build requirements"
 	-@echo "make clone: Get source tree into $(SDIR)"
 	-@echo "make setup: configure QEMU build. arm and aarch64 in this case"
 	-@echo "make build: runs make on QEMU source tree ($(SDIR))"
-	-@echo "make update: copies binaries to target folder ($(QDIR))"
-	-@echo "make msys: ensure pacman updates and installs build requirements"
-	-@echo "make nuke: delete all build artefacts, including directory and configuration $(BDIR)cd ../qemu9"
 	-@echo "make install: copies built binaries and runtime DLLs etc. to target folder ($(QDIR))"
+	-@echo "make update: copies new binaries to target folder ($(QDIR))"
+	-@echo "make version: checks installed binaries for version string ($(QDIR))"
+	-@echo "make nukes: delete all build artefacts, including directory and configuration $(BDIR)"
 
 # make sure msys environment is up to date
 msys:
@@ -40,17 +56,33 @@ msys:
 
 # clone and checkout 
 clone:
+	# get the repo
 	git clone $(QREPO) $(SDIR)
+	# get the branch
 	git -C $(SDIR) checkout $(QVER)
 	
 # setup+configure
 setup:
 	mkdir -p $(BDIR)
-	cd $(BDIR) && $(SDIR)/configure --target-list=$(T_ARM) --disable-capstone --disable-gtk --disable-sdl
+	cd $(BDIR) && $(SDIR)/configure --target-list=$(TARGET_LIST) --disable-capstone --disable-gtk --disable-sdl
 
 # actually build binaries. adjust jobs to suit
 build:
 	make -C $(BDIR) -j 6
+
+# copy QEMU binaries and runtime DLL files etc. This could be automated and improved!
+install:
+# clean
+	rm -rf $(QDIR)
+	mkdir -p $(QDIR)
+	cp $(BDIR)/*.exe $(QDIR)
+# get dependencies for each binary
+	$(foreach EL,$(EXE_LIST),strace $(EL) -machine mps2-an500 | grep msys64 | cut -d' ' -f 5 >> .deps-b;)
+# de-dup list
+	cat .deps-b | sort | uniq > .deps-l
+# finally copy to QDIR replacing \path\to with /path/to
+	cat .deps-l | sed 's/\\/\//g' | xargs -I % cp % $(QDIR)
+	rm -f .deps-*
 
 # just copy the binaries we built
 update:
@@ -58,22 +90,23 @@ update:
 
 # check version etc and that it runs
 version:
-	$(QDIR)/qemu-system-arm --version
-	$(QDIR)/qemu-system-aarch64 --version
+	@ls -has $(QDIR)
+	@$(foreach EL,$(TARGETS), $(QDIR)/qemu-system-$(EL).exe --version;)
 
-# copy QEMU binaries and runtime DLL files etc. This could be automated and improved!
-install:
-	rm -rf $(QDIR)
-	mkdir -p $(QDIR)
-	cp $(BDIR)/*.exe $(QDIR)
-	cp /mingw64/bin/{libatk-1.0-0.dll,libbz2-1.dll,libcairo-2.dll,libcairo-gobject-2.dll,libdatrie-1.dll,libepoxy-0.dll,libexpat-1.dll,libffi-6.dll,libfontconfig-1.dll,libfreetype-6.dll,libfribidi-0.dll,libgcc_s_seh-1.dll,libgdk_pixbuf-2.0-0.dll,libgdk-3-0.dll,libgio-2.0-0.dll,libglib-2.0-0.dll,libgmodule-2.0-0.dll,libgobject-2.0-0.dll,libgraphite2.dll,libgtk-3-0.dll,libharfbuzz-0.dll,libiconv-2.dll,libintl-8.dll,libjpeg-8.dll,liblzo2-2.dll,libpango-1.0-0.dll,libpangocairo-1.0-0.dll,libpangoft2-1.0-0.dll,libpangowin32-1.0-0.dll,libpcre-1.dll,libpixman-1-0.dll,libpng16-16.dll,libssp-0.dll,libstdc++-6.dll,libthai-0.dll,libwinpthread-1.dll,SDL2.dll,zlib1.dll} $(QDIR)
-
-# check dependencies as these need to be exported to the Windows environment 
-# if msys2 /bin and friends is not in the Windows path
- deps:
-	strace ../build/qemu-system-arm -machine mps2-an500
-
-# caution will delete all build artefacts
-nuke:
+# caution will delete all build artefacts including config
+nukes:
+	rm -f .deps-*
 	rm -rf $(BDIR)
+	rm -f $(QDIR)/*.*
 	mkdir $(BDIR)
+
+# configuration onwards
+world: setup build install version
+
+# build onwards
+do: build install version
+	
+# just checking!
+loop:	
+	@echo target list is: $(TARGET_LIST)
+	@echo dep list is: $(EXE_LIST)
