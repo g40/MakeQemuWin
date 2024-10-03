@@ -1,24 +1,30 @@
 #
 # makefile for building QEMU on Windows using msys2 MINGW64
 #
+# *must* be run inside an MSYS64 shell.
+#
 # directory structure assumes 3 peers (inside msys) so Git is siloed:
 # ..
 # MakeQemuWin
 # qemu
 # build
 #
-# and an external Windows direectory for the binaries and dependencies
+# and an external Windows directory for the binaries and dependencies
 # 
+
+# number of jobs to run
+JOB=4
 
 # QEMU repository
 QREPO=https://github.com/qemu/qemu.git
 # version we want to build
-QVER=v9.0.0-rc4
+# QVER=v9.0.0-rc4
+QVER=v9.1.0
 # where binaries will live to keep path short
-QDIR=/r/apps/qemu9
+QDIR=/r/apps/qemu-x
 
 # target machines. I'm only interested in ARM stuff for this build
-TARGETS=arm aarch64
+TARGETS=arm aarch64 x86_64
 
 
 # out of tree build dir.
@@ -42,7 +48,7 @@ all:
 	-@echo "make do: runs build install version"
 	-@echo "make msys: ensure pacman updates and installs build requirements"
 	-@echo "make clone: Get source tree into $(SDIR)"
-	-@echo "make setup: configure QEMU build. arm and aarch64 in this case"
+	-@echo "make setup: configure QEMU build: $(TARGETS)"
 	-@echo "make build: runs make on QEMU source tree ($(SDIR))"
 	-@echo "make install: copies built binaries and runtime DLLs etc. to target folder ($(QDIR))"
 	-@echo "make update: copies new binaries to target folder ($(QDIR))"
@@ -52,7 +58,7 @@ all:
 # make sure msys environment is up to date
 msys:
 	pacman -Suy --noconfirm
-	pacman -Sy --noconfirm base-devel ninja glib2-devel mingw-w64-x86_64-gcc git python mingw-w64-x86_64-glib2 
+	pacman -Sy --noconfirm base-devel ninja pkg-config glib2-devel mingw-w64-x86_64-gcc git python mingw-w64-x86_64-glib2 
 	pacman -Sy --noconfirm mingw-w64-x86_64-glib2 mingw-w64-x86_64-gtk3 mingw-w64-x86_64-SDL2
 
 # clone and checkout 
@@ -69,7 +75,7 @@ setup:
 
 # actually build binaries. adjust jobs to suit
 build:
-	make -C $(BDIR) -j 6
+	make -C $(BDIR) -j $(JOBS)
 
 # copy QEMU binaries and runtime DLL files etc. This could be automated and improved!
 install:
