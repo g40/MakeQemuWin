@@ -48,12 +48,13 @@ all:
 	-@echo "make do: runs build install version"
 	-@echo "make msys: ensure pacman updates and installs build requirements"
 	-@echo "make clone: Get source tree into $(SDIR)"
-	-@echo "make setup: configure QEMU build: $(TARGETS)"
-	-@echo "make build: runs make on QEMU source tree ($(SDIR))"
-	-@echo "make install: copies built binaries and runtime DLLs etc. to target folder ($(QDIR))"
-	-@echo "make update: copies new binaries to target folder ($(QDIR))"
-	-@echo "make version: checks installed binaries for version string ($(QDIR))"
-	-@echo "make nukes: delete all build artefacts, including directory and configuration $(BDIR)"
+	-@echo "make pull: Pull source tree QVER=$(QVER) SDIR=$(SDIR)"
+	-@echo "make setup: configure QEMU build: TARGETS=$(TARGETS)"
+	-@echo "make build: runs make on QEMU source tree SDIR=$(SDIR)"
+	-@echo "make install: copies built binaries and runtime DLLs etc. to target folder (QDIR=$(QDIR))"
+	-@echo "make update: copies new binaries to target folder (QDIR=$(QDIR))"
+	-@echo "make version: checks installed binaries for version string (QDIR=$(QDIR))"
+	-@echo "make nukes: delete all build artefacts, including directory and configuration BDIR=$(BDIR)"
 
 # make sure msys environment is up to date
 msys:
