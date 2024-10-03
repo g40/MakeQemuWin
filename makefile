@@ -19,7 +19,7 @@ JOB=4
 QREPO=https://github.com/qemu/qemu.git
 # version we want to build
 # QVER=v9.0.0-rc4
-QVER=v9.1.0
+QVER?=v9.1.0
 # where binaries will live to keep path short
 QDIR=/r/apps/qemu-x
 
@@ -68,6 +68,13 @@ clone:
 	# get the branch
 	git -C $(SDIR) checkout $(QVER)
 	
+pull:
+	# get the repo
+	git -C $(SDIR) pull $(QREPO) $(QVER)
+	# get the branch
+	git -C $(SDIR) checkout $(QVER)
+
+
 # setup+configure
 setup:
 	mkdir -p $(BDIR)
@@ -98,7 +105,7 @@ update:
 # check version etc and that it runs
 version:
 	@ls -has $(QDIR)
-	@$(foreach EL,$(TARGETS), $(QDIR)/qemu-system-$(EL).exe --version;)
+	$(foreach EL,$(TARGETS), $(QDIR)/qemu-system-$(EL).exe --version;)
 
 # caution will delete all build artefacts including config
 nukes:
