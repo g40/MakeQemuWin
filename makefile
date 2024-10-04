@@ -13,7 +13,10 @@
 # 
 
 # number of jobs to run
-JOB=4
+JOBS=4
+
+#
+QDEBUG=--enable-debug
 
 # QEMU repository
 QREPO=https://github.com/qemu/qemu.git
@@ -23,7 +26,7 @@ QVER?=v9.1.0
 # where binaries will live to keep path short
 QDIR=/r/apps/qemu-x
 
-# target machines. I'm only interested in ARM stuff for this build
+# target machines. I'm only interested in ARM/x86 stuff for this build
 TARGETS=arm aarch64 x86_64
 
 
@@ -49,17 +52,18 @@ all:
 	-@echo "make msys: ensure pacman updates and installs build requirements"
 	-@echo "make clone: Get source tree into $(SDIR)"
 	-@echo "make pull: Pull source tree QVER=$(QVER) SDIR=$(SDIR)"
-	-@echo "make setup: configure QEMU build: TARGETS=$(TARGETS)"
+	-@echo "make setup: configure QEMU build: TARGETS=$(TARGETS) QDEBUG=$(QDEBUG)"
 	-@echo "make build: runs make on QEMU source tree SDIR=$(SDIR)"
 	-@echo "make install: copies built binaries and runtime DLLs etc. to target folder (QDIR=$(QDIR))"
 	-@echo "make update: copies new binaries to target folder (QDIR=$(QDIR))"
 	-@echo "make version: checks installed binaries for version string (QDIR=$(QDIR))"
 	-@echo "make nukes: delete all build artefacts, including directory and configuration BDIR=$(BDIR)"
+	-@echo "make gdb: Debug x86_64 build using MSYS gdb."
 
 # make sure msys environment is up to date
 msys:
-	pacman -Suy --noconfirm
-	pacman -Sy --noconfirm base-devel ninja pkg-config glib2-devel mingw-w64-x86_64-gcc git python mingw-w64-x86_64-glib2 
+#	pacman -Suy --noconfirm
+	pacman -Sy --noconfirm base-devel ninja pkg-config glib2-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb git python mingw-w64-x86_64-glib2 
 	pacman -Sy --noconfirm mingw-w64-x86_64-glib2 mingw-w64-x86_64-gtk3 mingw-w64-x86_64-SDL2
 
 # clone and checkout 
@@ -79,7 +83,7 @@ pull:
 # setup+configure
 setup:
 	mkdir -p $(BDIR)
-	cd $(BDIR) && $(SDIR)/configure --target-list=$(TARGET_LIST) --disable-capstone --disable-gtk --disable-sdl
+	cd $(BDIR) && $(SDIR)/configure --target-list=$(TARGET_LIST) --disable-capstone --disable-gtk --disable-sdl $(QDEBUG)
 
 # actually build binaries. adjust jobs to suit
 build:
@@ -120,6 +124,14 @@ world: setup build install version
 
 # build onwards
 do: build install version
+
+# just run it
+run:
+	/r/apps/qemu-x/qemu-system-x86_64 -m 8G  -hda /r/src/qemu/qemu-w10-tap/dsk/qem/alpine-standard-3.20.3/alpine-standard-3.20.3.qcow2 -L /r/apps/qemu/9.1.0
+
+# gdb
+gdb:
+	gdb -ex "set verbose off" -ex "b x86_bios_rom_init" --args /r/apps/qemu-x/qemu-system-x86_64 -m 8G  -hda /r/src/qemu/qemu-w10-tap/dsk/qem/alpine-standard-3.20.3/alpine-standard-3.20.3.qcow2 -L /r/apps/qemu/9.1.0
 	
 # just checking!
 loop:	
