@@ -58,10 +58,11 @@ all:
 	-@echo "make update: copies new binaries to target folder (QDIR=$(QDIR))"
 	-@echo "make version: checks installed binaries for version string (QDIR=$(QDIR))"
 	-@echo "make nukes: delete all build artefacts, including directory and configuration BDIR=$(BDIR)"
+	-@echo "make run: Run x86_64 build using MSYS gdb."
 	-@echo "make gdb: Debug x86_64 build using MSYS gdb."
 
 # make sure msys environment is up to date
-msys:
+msys:setup
 #	pacman -Suy --noconfirm
 	pacman -Sy --noconfirm base-devel ninja pkg-config glib2-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb git python mingw-w64-x86_64-glib2 
 	pacman -Sy --noconfirm mingw-w64-x86_64-glib2 mingw-w64-x86_64-gtk3 mingw-w64-x86_64-SDL2
