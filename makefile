@@ -24,7 +24,7 @@ QREPO=https://github.com/qemu/qemu.git
 # QVER=v9.0.0-rc4
 QVER?=v9.1.0
 # where binaries will live to keep path short
-QDIR=/r/apps/qemu-x
+QDIR=../qemu-dist
 
 # target machines. I'm only interested in ARM/x86 stuff for this build
 TARGETS=arm aarch64 x86_64
@@ -62,8 +62,8 @@ all:
 	-@echo "make gdb: Debug x86_64 build using MSYS gdb."
 
 # make sure msys environment is up to date
-msys:setup
-#	pacman -Suy --noconfirm
+msys:
+	pacman -Suy --noconfirm
 	pacman -Sy --noconfirm base-devel ninja pkg-config glib2-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-gdb git python mingw-w64-x86_64-glib2 
 	pacman -Sy --noconfirm mingw-w64-x86_64-glib2 mingw-w64-x86_64-gtk3 mingw-w64-x86_64-SDL2
 
@@ -128,11 +128,11 @@ do: build install version
 
 # just run it
 run:
-	/r/apps/qemu-x/qemu-system-x86_64 -m 8G  -hda /r/src/qemu/qemu-w10-tap/dsk/qem/alpine-standard-3.20.3/alpine-standard-3.20.3.qcow2 -L /r/apps/qemu/9.1.0
+	$(QDIR)/qemu-system-x86_64 -m 8G  -hda /r/src/qemu/qemu-w10-tap/dsk/qem/alpine-standard-3.20.3/alpine-standard-3.20.3.qcow2 -L /r/apps/qemu/9.1.0
 
 # gdb
 gdb:
-	gdb -ex "set verbose off" -ex "b x86_bios_rom_init" --args /r/apps/qemu-x/qemu-system-x86_64 -m 8G  -hda /r/src/qemu/qemu-w10-tap/dsk/qem/alpine-standard-3.20.3/alpine-standard-3.20.3.qcow2 -L /r/apps/qemu/9.1.0
+	gdb -ex "set verbose off" -ex "b x86_bios_rom_init" --args $(QDIR)/qemu-system-x86_64 -m 8G  -hda /r/src/qemu/qemu-w10-tap/dsk/qem/alpine-standard-3.20.3/alpine-standard-3.20.3.qcow2 -L /r/apps/qemu/9.1.0
 	
 # just checking!
 loop:	
