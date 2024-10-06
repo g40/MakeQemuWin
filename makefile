@@ -26,6 +26,16 @@ QVER?=v9.1.0
 # where binaries will live to keep path short
 QDIR=../qemu-dist
 
+# ISO+QCOW files
+DISTRO=alpine-standard-3.20.3
+ISO=$(DISTRO)-x86_64.iso
+MEDIAROOT?=../qemu-media
+ISODIR=$(MEDIAROOT)\$(DISTRO)
+ISOFQN=$(ISODIR)\$(ISO)
+DISKDIR=$(MEDIAROOT)\$(DISTRO)
+DISKNAME=$(DISKDIR)\$(DISTRO).qcow2
+
+
 # target machines. I'm only interested in ARM/x86 stuff for this build
 TARGETS=arm aarch64 x86_64
 
@@ -58,8 +68,8 @@ all:
 	-@echo "make update: copies new binaries to target folder (QDIR=$(QDIR))"
 	-@echo "make version: checks installed binaries for version string (QDIR=$(QDIR))"
 	-@echo "make nukes: delete all build artefacts, including directory and configuration BDIR=$(BDIR)"
-	-@echo "make run: Run x86_64 build using MSYS gdb."
-	-@echo "make gdb: Debug x86_64 build using MSYS gdb."
+	-@echo "make run: Run x86_64 build using MSYS gdb. DISTRO=$(DISTRO)"
+	-@echo "make debug: Debug x86_64 build using MSYS gdb. DISTRO=$(DISTRO)"
 
 # make sure msys environment is up to date
 msys:
@@ -128,11 +138,11 @@ do: build install version
 
 # just run it
 run:
-	$(QDIR)/qemu-system-x86_64 -m 8G  -hda /r/src/qemu/qemu-w10-tap/dsk/qem/alpine-standard-3.20.3/alpine-standard-3.20.3.qcow2 -L /r/apps/qemu/9.1.0
+	$(QDIR)/qemu-system-x86_64 -m 8G  -hda $(DISKNAME) -L /r/apps/qemu/9.1.0
 
-# gdb
-gdb:
-	gdb -ex "set verbose off" -ex "b x86_bios_rom_init" --args $(QDIR)/qemu-system-x86_64 -m 8G  -hda /r/src/qemu/qemu-w10-tap/dsk/qem/alpine-standard-3.20.3/alpine-standard-3.20.3.qcow2 -L /r/apps/qemu/9.1.0
+# debug. this is easier to do externally using CodeLite with its GDB GUI
+debug:
+	gdb -ex "set verbose off" -ex "b x86_bios_rom_init" --args $(QDIR)/qemu-system-x86_64 -m 8G  -hda $(DISKNAME) -L /r/apps/qemu/9.1.0
 	
 # just checking!
 loop:	
