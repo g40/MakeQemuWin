@@ -12,11 +12,11 @@
 # and an external Windows directory for the binaries and dependencies
 # 
 
-# number of jobs to run
+# number of jobs to run. i7 overheats with 8!
 JOBS=4
 
 #
-QDEBUG=--enable-debug
+# QDEBUG=--enable-debug
 
 # QEMU repository
 QREPO=https://github.com/qemu/qemu.git
@@ -24,16 +24,20 @@ QREPO=https://github.com/qemu/qemu.git
 # QVER=v9.0.0-rc4
 QVER?=v9.1.0
 # where binaries will live to keep path short
-QDIR=../qemu-dist
+QDIR=../qemu-$(QVER)
 
 # ISO+QCOW files
 DISTRO=alpine-standard-3.20.3
 ISO=$(DISTRO)-x86_64.iso
 MEDIAROOT?=../qemu-media
-ISODIR=$(MEDIAROOT)\$(DISTRO)
-ISOFQN=$(ISODIR)\$(ISO)
-DISKDIR=$(MEDIAROOT)\$(DISTRO)
-DISKNAME=$(DISKDIR)\$(DISTRO).qcow2
+ISODIR=$(MEDIAROOT)/$(DISTRO)
+ISOFQN=$(ISODIR)/$(ISO)
+DISKDIR=$(MEDIAROOT)/$(DISTRO)
+DISKNAME=$(DISKDIR)/$(DISTRO).qcow2
+
+# 
+MAC=52:55:00:d1:55:03
+NETOPTS=-device e1000,netdev=mynet0,mac=$(MAC) -netdev tap,id=mynet0,ifname=tap $(SHARED)
 
 
 # target machines. I'm only interested in ARM/x86 stuff for this build
@@ -46,7 +50,7 @@ BDIR=../build
 SDIR=../qemu
 # assemble target machines
 SPACE=$(subst ,, )
-# contains spaces ...
+# contains spaces ...	
 S_LIST:=$(foreach EL,$(TARGETS),$(EL)-softmmu,)
 # so remove them.
 TARGET_LIST:=$(subst $(SPACE),,$(S_LIST))
@@ -93,8 +97,9 @@ pull:
 
 # setup+configure
 setup:
+# --disable-gtk --disable-sdl 
 	mkdir -p $(BDIR)
-	cd $(BDIR) && $(SDIR)/configure --target-list=$(TARGET_LIST) --disable-capstone --disable-gtk --disable-sdl $(QDEBUG)
+	cd $(BDIR) && $(SDIR)/configure --target-list=$(TARGET_LIST) --disable-capstone $(QDEBUG)
 
 # actually build binaries. adjust jobs to suit
 build:
@@ -103,16 +108,17 @@ build:
 # copy QEMU binaries and runtime DLL files etc. This could be automated and improved!
 install:
 # clean
-	rm -rf $(QDIR)
-	mkdir -p $(QDIR)
+#	rm -rf $(QDIR)
+#	mkdir -p $(QDIR)
+	-rm $(QDIR)/*.exe
 	cp $(BDIR)/*.exe $(QDIR)
 # get dependencies for each binary
-	$(foreach EL,$(EXE_LIST),strace $(EL) -machine mps2-an500 | grep msys64 | cut -d' ' -f 5 >> .deps-b;)
+#	$(foreach EL,$(EXE_LIST),strace $(EL) -machine mps2-an500 | grep msys64 | cut -d' ' -f 5 >> .deps-b;)
 # de-dup list
-	cat .deps-b | sort | uniq > .deps-l
+#	cat .deps-b | sort | uniq > .deps-l
 # finally copy to QDIR replacing \path\to with /path/to
-	cat .deps-l | sed 's/\\/\//g' | xargs -I % cp % $(QDIR)
-	rm -f .deps-*
+	# cat .deps-l | sed 's/\\/\//g' | xargs -I % cp % $(QDIR)
+	# rm -f .deps-*
 
 # just copy the binaries we built
 update:
@@ -125,9 +131,9 @@ version:
 
 # caution will delete all build artefacts including config
 nukes:
-	rm -f .deps-*
-	rm -rf $(BDIR)
-	rm -f $(QDIR)/*.*
+	-rm -f .deps-*
+	-rm -rf $(BDIR)
+	-rm -f $(QDIR)/*.exe
 	mkdir $(BDIR)
 
 # configuration onwards
@@ -138,11 +144,11 @@ do: build install version
 
 # just run it
 run:
-	$(QDIR)/qemu-system-x86_64 -m 8G  -hda $(DISKNAME) -L /r/apps/qemu/9.1.0
+	$(QDIR)/qemu-system-x86_64 -m 8G -hda $(DISKNAME) $(NETOPTS) 
 
 # debug. this is easier to do externally using CodeLite with its GDB GUI
 debug:
-	gdb -ex "set verbose off" -ex "b x86_bios_rom_init" --args $(QDIR)/qemu-system-x86_64 -m 8G  -hda $(DISKNAME) -L /r/apps/qemu/9.1.0
+	gdb -ex "set verbose off" -ex "b x86_bios_rom_init" --args $(QDIR)/qemu-system-x86_64 -m 8G  -hda $(DISKNAME)
 	
 # just checking!
 loop:	
